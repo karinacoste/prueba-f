@@ -4,14 +4,9 @@
     <VMenu placement="bottom-end" :distance="18">
       <!-- This will be the popover target (for the events and position) -->
       <button class="flex ml-6 font-medium text-center items-center">
-        Kent Pierce
+        {{ popoverTarget }}
 
-        <span class="flex w-3 ml-4 mt-1"
-          ><ChevronDownIcon
-            class="transition-transform duration-300"
-            :class="{ 'rotate-180': isOpenSprintMenu }"
-          ></ChevronDownIcon
-        ></span>
+        <span class="flex w-3 ml-4 mt-1"><ChevronDownIcon /></span>
       </button>
       <!-- This will be the content of the popover -->
       <template #popper="{ hide }">
@@ -28,8 +23,7 @@
                   <div class="absolute z-10 left-0 w-3 ml-4 mt-1">
                     <ChevronDownIcon
                       class="transition-transform duration-300 rotate-90"
-                      :class="{ 'rotate-180': isOpenSprintMenu }"
-                    ></ChevronDownIcon>
+                    />
                   </div>
                   {{ item.name }}
                 </div>
@@ -55,7 +49,7 @@
                             <span class="font-bold"
                               >Sesame{{ index + 1 }}
                             </span>
-                            <span class="ml-2"> {{ userName }}</span>
+                            <span class="ml-2"> {{ popoverTarget }}</span>
                             <div class="w-full -mt-1 text-gray-400">
                               Hoy llevas 00:00
                             </div>
@@ -92,7 +86,7 @@ export default {
       type: Array,
       default: () => [],
     },
-    userName: {
+    popoverTarget: {
       type: String,
       default: '',
     },

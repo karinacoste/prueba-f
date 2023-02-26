@@ -5,8 +5,10 @@
         class="flex py-2 px-6 rounded-full bg-sesameGray2 items-center space-x-4"
       >
         <div>
-          <span>04:05:06 </span>
-          <span class="text-gray-400" v-if="!notWorkingNow">/ 07:00:53</span>
+          <span>{{ lastTimeWorked }} </span>
+          <span class="text-gray-400" v-if="workStatus === 'online'"
+            >/ {{ timeOnline }}</span
+          >
         </div>
 
         <CustomButton
@@ -16,7 +18,7 @@
         ></CustomButton>
 
         <CustomButton
-          v-if="!notWorkingNow"
+          v-if="workStatus === 'online'"
           text="Salir"
           buttonClass="bg-sesameOrange w-40 text-white"
           @click="startWorking"
@@ -24,9 +26,12 @@
 
         <span class="h-6 w-0.5 bg-sesameGray3"></span>
         <div class="flex items-center">
-          <CustomAvatar :image="userImage" :state="userState"></CustomAvatar>
+          <CustomAvatar :image="userImage" :state="workStatus"></CustomAvatar>
         </div>
-        <DropdownMenu :items="menuItems" userName="Kent Pierce"></DropdownMenu>
+        <DropdownMenu
+          :items="menuItems"
+          popoverTarget="Kent Pierce"
+        ></DropdownMenu>
       </div>
     </div>
   </div>
@@ -35,50 +40,60 @@
 <script>
 // @ is an alias to /src
 
-import { ref, computed, watchEffect, watch, defineComponent } from 'vue'
+import { ref, computed, defineComponent } from 'vue'
 import { useStore } from 'vuex'
-import {
-  addDays,
-  getTime,
-  endOfWeek,
-  startOfISOWeek,
-  endOfISOWeek,
-  getWeek,
-  getISOWeek,
-  format,
-  formatISO,
-} from 'date-fns'
+import { timeInterval } from '../assets/js/utils'
+
 import CustomButton from '../components/buttons/CustomButton.vue'
 import CustomAvatar from '../components/CustomAvatar.vue'
 import DropdownMenu from '../components/DropdownMenu.vue'
-const store = useStore()
 
-let count = 0
 export default defineComponent({
   components: { CustomButton, CustomAvatar, DropdownMenu },
   setup() {
-    const userImage = ref('user-1-image')
-    const userState = computed(() => {
-      if (notWorkingNow.value) {
-        return 'notWorking'
-      } else {
-        return 'working'
-      }
+    const store = useStore()
+    store.dispatch('fetchWorkEntries')
+    const workEntryIn = computed(() => {
+      return store.state.workEntryIn
     })
-    const notWorkingNow = ref(true)
-    const startWorking = () => {
-      notWorkingNow.value = !notWorkingNow.value
-      console.log('start working')
+    const lastTimeWorked = computed(() => {
+      return store.state.lastTimeWorked
+    })
+    const getRealTimeOnline = () => {
+      if (workEntryIn.value) {
+        timeOnline.value = timeInterval(workEntryIn.value)
+      }
+    }
+    const timeOnline = ref('00:00:00')
+    setInterval(getRealTimeOnline, 1000)
+    const lastWorkEntry = computed(() => {
+      return store.getters.lastEntry
+    })
+    const workStatus = computed(() => {
+      return store.getters.lastEntry
+        ? store.getters.lastEntry.employee.workStatus
+        : ''
+    })
+    const userImage = ref('user-1-image')
+
+    const startWorking = async () => {
+      if (workStatus.value === 'offline') {
+        await store.dispatch('setWorkEntryIn')
+        store.dispatch('fetchWorkEntries')
+      } else {
+        await store.dispatch('setWorkEntryOut')
+        store.dispatch('fetchWorkEntries')
+      }
     }
     const startWorkingButtonText = computed(() => {
-      if (notWorkingNow.value) {
+      if (workStatus.value === 'offline') {
         return 'Entrar'
       } else {
         return 'Pausar'
       }
     })
     const startWorkingButtonClass = computed(() => {
-      if (notWorkingNow.value) {
+      if (workStatus.value === 'offline') {
         return 'bg-sesameGreen w-40 text-white'
       } else {
         return 'bg-sesameGray5 w-40 text-white'
@@ -103,12 +118,16 @@ export default defineComponent({
       },
     ]
     return {
-      userState,
+      getRealTimeOnline,
+      timeOnline,
+      lastTimeWorked,
+      workEntryIn,
+      workStatus,
+      lastWorkEntry,
       userImage,
       menuItems,
       startWorking,
       startWorkingButtonClass,
-      notWorkingNow,
       startWorkingButtonText,
     }
   },
